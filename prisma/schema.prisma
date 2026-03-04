@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Region {
+  LATAM
+  CHINA
+  EAST_EU
+  APAC
+}
+
+enum Stage {
+  mapped
+  engaged
+  exploring
+  qualified
+  handed_off
+}
+
+enum InstitutionType {
+  PublicHospital    @map("Public Hospital")
+  PrivateHospital   @map("Private Hospital")
+  UniversityHospital @map("University Hospital")
+  ReferenceLab      @map("Reference Lab")
+  HospitalNetwork   @map("Hospital Network")
+  PrivateLab        @map("Private Lab")
+}
+
+enum Volume {
+  UNDER_500       @map("< 500")
+  V500_1000       @map("500 - 1,000")
+  V1000_3000      @map("1,000 - 3,000")
+  V3000_PLUS      @map("3,000+")
+}
+
+enum AutomationStatus {
+  NoAutomation        @map("No automation (manual)")
+  PartialCompetitor   @map("Partial pre-analytical (competitor)")
+  CompetitorFull      @map("Competitor full system")
+  LegacyInpeco        @map("Legacy Inpeco (via OEM)")
+  MixedOther          @map("Mixed / Other")
+}
+
+enum RfpStatus {
+  NoRfpExpected   @map("No RFP expected")
+  RfpExpected     @map("RFP expected")
+  RfpPublished    @map("RFP published")
+  Unknown
+}
+
+model Laboratory {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  country   String
+  region    Region
+  lat       Float?
+  lng       Float?
+
+  type       InstitutionType
+  volume     Volume
+  automation AutomationStatus
+  ivd        String[]
+  stage      Stage     @default(mapped)
+  score      Int       @default(0)
+  product    String[]
+  rfp        RfpStatus @default(Unknown)
+  rfpDate    String?
+
+  notes     Note[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id     String   @id @default(uuid())
+  date   DateTime
+  author String
+  text   String
+
+  lab    Laboratory @relation(fields: [labId], references: [id], onDelete: Cascade)
+  labId  String
+
+  createdAt DateTime @default(now())
+}
