@@ -4,6 +4,7 @@ import { useState } from "react";
 import Sidebar from "./layout/Sidebar";
 import TopBar from "./layout/TopBar";
 import DetailPanel from "./layout/DetailPanel";
+import MapView from "./views/MapView";
 import { MOCK_LABS } from "@/lib/constants";
 import type { Laboratory, Filters } from "@/lib/types";
 
@@ -40,8 +41,13 @@ export default function HorizonApp() {
           style={{ padding: activeView === "map" ? 0 : 24 }}
         >
           {activeView === "map" && (
-            <div className="h-full flex items-center justify-center" style={{ color: "#94A3B8" }}>
-              Global Map View — Coming next
+            <div className="h-full relative">
+              <MapView
+                labs={MOCK_LABS}
+                filters={filters}
+                selectedLab={selectedLab}
+                onLabClick={setSelectedLab}
+              />
             </div>
           )}
           {activeView === "pipeline" && (
