@@ -5,6 +5,9 @@ import Sidebar from "./layout/Sidebar";
 import TopBar from "./layout/TopBar";
 import DetailPanel from "./layout/DetailPanel";
 import MapView from "./views/MapView";
+import PipelineView from "./views/PipelineView";
+import ListView from "./views/ListView";
+import DashboardView from "./views/DashboardView";
 import { MOCK_LABS } from "@/lib/constants";
 import type { Laboratory, Filters } from "@/lib/types";
 
@@ -50,20 +53,30 @@ export default function HorizonApp() {
               />
             </div>
           )}
+
           {activeView === "pipeline" && (
-            <div className="h-full flex items-center justify-center" style={{ color: "#94A3B8" }}>
-              Pipeline View
+            <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+              <PipelineView
+                labs={MOCK_LABS}
+                filters={filters}
+                onLabClick={setSelectedLab}
+              />
             </div>
           )}
+
           {activeView === "list" && (
-            <div className="h-full flex items-center justify-center" style={{ color: "#94A3B8" }}>
-              List View
-            </div>
+            <ListView
+              labs={MOCK_LABS}
+              filters={filters}
+              onLabClick={setSelectedLab}
+            />
           )}
+
           {activeView === "dashboard" && (
-            <div className="h-full flex items-center justify-center" style={{ color: "#94A3B8" }}>
-              Dashboard View
-            </div>
+            <DashboardView
+              labs={MOCK_LABS}
+              onLabClick={setSelectedLab}
+            />
           )}
         </div>
       </div>
