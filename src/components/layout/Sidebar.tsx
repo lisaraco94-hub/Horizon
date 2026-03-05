@@ -1,5 +1,7 @@
 "use client";
 
+import { useUser } from "@/lib/UserContext";
+
 type View = "map" | "pipeline" | "list" | "dashboard";
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
@@ -9,12 +11,26 @@ const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
   { key: "dashboard", label: "Dashboard", icon: "◫" },
 ];
 
+const ROLE_LABELS: Record<string, string> = {
+  global_manager: "Global Manager",
+  regional_manager: "Regional Manager",
+  distributor: "Distributor",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  global_manager: "#6366F1",
+  regional_manager: "#3B82F6",
+  distributor: "#10B981",
+};
+
 interface SidebarProps {
   activeView: View;
   onViewChange: (view: View) => void;
 }
 
 export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
+  const { user, logout } = useUser();
+
   return (
     <div
       className="flex flex-col shrink-0"
@@ -100,32 +116,100 @@ export default function Sidebar({ activeView, onViewChange }: SidebarProps) {
       </div>
 
       {/* User block */}
-      <div
-        className="px-5 py-4"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-      >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex items-center justify-center"
+      {user && (
+        <div
+          className="px-4 py-4"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          <div className="flex items-center gap-2.5 mb-2">
+            <div
+              className="flex items-center justify-center"
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: "50%",
+                background: `${ROLE_COLORS[user.role]}25`,
+                border: `1px solid ${ROLE_COLORS[user.role]}50`,
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  color: ROLE_COLORS[user.role],
+                  fontSize: 10,
+                  fontWeight: 700,
+                  fontFamily: "'Space Mono', monospace",
+                }}
+              >
+                {user.username.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#E2E8F0",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {user.username}
+              </div>
+              <div
+                style={{
+                  color: ROLE_COLORS[user.role],
+                  fontSize: 10,
+                  fontWeight: 500,
+                }}
+              >
+                {ROLE_LABELS[user.role]}
+              </div>
+            </div>
+          </div>
+          {user.region && (
+            <div
+              style={{
+                color: "#64748B",
+                fontSize: 10,
+                marginBottom: 6,
+                paddingLeft: 40,
+              }}
+            >
+              {user.region}
+              {user.distributor && ` · ${user.distributor}`}
+            </div>
+          )}
+          <button
+            onClick={logout}
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #6366F1, #EC4899)",
+              width: "100%",
+              padding: "6px 0",
+              borderRadius: 6,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "transparent",
+              color: "#64748B",
+              fontSize: 11,
+              cursor: "pointer",
+              fontFamily: "'DM Sans', sans-serif",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239,68,68,0.1)";
+              e.currentTarget.style.color = "#EF4444";
+              e.currentTarget.style.borderColor = "rgba(239,68,68,0.2)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "#64748B";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
             }}
           >
-            <span className="text-white" style={{ fontSize: 11, fontWeight: 700 }}>
-              GB
-            </span>
-          </div>
-          <div>
-            <div style={{ color: "#E2E8F0", fontSize: 12, fontWeight: 500 }}>
-              Global Business Mgr
-            </div>
-            <div style={{ color: "#475569", fontSize: 10 }}>System Owner</div>
-          </div>
+            Sign Out
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

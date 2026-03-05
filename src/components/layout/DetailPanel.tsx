@@ -17,6 +17,7 @@ export default function DetailPanel({ lab, onClose }: DetailPanelProps) {
     { label: "Volume", value: lab.volume + " /day" },
     { label: "Automation", value: lab.automation?.split("(")[0]?.trim() },
     { label: "Region", value: region.label },
+    { label: "Distributor", value: lab.distributor },
     {
       label: "RFP Status",
       value: lab.rfp + (lab.rfpDate ? ` (${lab.rfpDate})` : ""),
