@@ -48,6 +48,22 @@ export const PRODUCTS = ["FlexLab X", "ProTube", "FlexPath"];
 
 export const RFP_STATUS = ["No RFP expected", "RFP expected", "RFP published", "Unknown"];
 
+export const AI_BRIEFING = `## Weekly Intelligence Briefing — March 3, 2026
+
+**Pipeline Momentum**: The global prospect base reached **12 laboratories** across 4 regions, with 3 prospects now at **Qualified** stage. This represents strong early traction for the platform.
+
+**Hot Opportunities**: Beijing Ditan Hospital (China) has an active RFP with April 15 deadline — this requires immediate attention. Hospital Italiano Buenos Aires has published their RFP for May, with a legacy Inpeco upgrade path that gives us a competitive advantage.
+
+**Regional Highlights**:
+• **LATAM** leads in pipeline activity with 3 prospects across all active stages and 2 upcoming RFPs. Carlos is building a strong base.
+• **China** shows the highest average prospect score (76) driven by Beijing Ditan's qualified status. The legacy Inpeco upgrade at Wuhan Union Hospital is a strategic opportunity.
+• **East Europe** has 3 prospects but needs acceleration — Prague University Hospital's July RFP is the nearest catalyst.
+• **APAC & MEA** has high-value targets (King Faisal, Apollo Network) that could drive significant revenue if converted.
+
+**Key Signals**: 3 of 12 prospects have legacy Inpeco systems — this upgrade cohort should be prioritized as a strategic initiative. The Siemens OEM contract expiration pattern (2025-2026) creates a time-sensitive window.
+
+**Action Items**: Prioritize RFP responses for Beijing (Apr) and Buenos Aires (May). Accelerate engagement in East Europe before Prague's July deadline. Consider Apollo Chennai as a strategic "lighthouse" installation for the Indian market.`;
+
 export const MOCK_LABS = [
   { id: 1, name: "Hospital Clínico Universidad de Chile", city: "Santiago", country: "Chile", region: "LATAM" as const, lat: -33.44, lng: -70.65, type: "University Hospital", volume: "1,000 - 3,000", automation: "No automation (manual)", ivd: ["Roche", "Beckman Coulter"], stage: "exploring" as const, product: ["FlexLab X"], rfp: "RFP expected", rfpDate: "2026-09", notes: [{ date: "2026-02-15", author: "Carlos Mendez", text: "Met with lab director at COLABIOCLI congress. Very interested in full automation. Currently running 1,800 samples/day manually. Budget cycle starts September." }, { date: "2026-01-20", author: "Carlos Mendez", text: "Distributor confirmed this is a key target. Lab is expanding to new wing in 2027." }], score: 82 },
   { id: 2, name: "São Paulo Reference Laboratory", city: "São Paulo", country: "Brazil", region: "LATAM" as const, lat: -23.55, lng: -46.63, type: "Reference Lab", volume: "3,000+", automation: "Competitor full system", ivd: ["Roche", "Abbott"], stage: "engaged" as const, product: ["FlexLab X"], rfp: "No RFP expected", notes: [{ date: "2026-02-28", author: "Carlos Mendez", text: "Initial contact through Roche transition. Current system is aging. Exploring options for 2027-2028 renewal." }], score: 65 },
