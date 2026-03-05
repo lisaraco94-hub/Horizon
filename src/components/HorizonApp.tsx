@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useUser } from "@/lib/UserContext";
 import LoginPage from "./LoginPage";
 import Sidebar from "./layout/Sidebar";
 import TopBar from "./layout/TopBar";
 import DetailPanel from "./layout/DetailPanel";
+import NewProspectModal from "./NewProspectModal";
 import MapView from "./views/MapView";
 import PipelineView from "./views/PipelineView";
 import ListView from "./views/ListView";
@@ -19,6 +20,7 @@ export default function HorizonApp() {
   const [activeView, setActiveView] = useState<View>("map");
   const [selectedLab, setSelectedLab] = useState<Laboratory | null>(null);
   const [filters, setFilters] = useState<Filters>({ region: "all", stage: "all" });
+  const [showNewProspect, setShowNewProspect] = useState(false);
 
   if (!user) return <LoginPage />;
 
@@ -28,6 +30,10 @@ export default function HorizonApp() {
     if (filters.stage !== "all" && lab.stage !== filters.stage) return false;
     return true;
   });
+
+  const handleCloseDetail = () => {
+    setSelectedLab(null);
+  };
 
   return (
     <div
@@ -41,6 +47,7 @@ export default function HorizonApp() {
           filters={filters}
           onFiltersChange={setFilters}
           labCount={filteredLabs.length}
+          onNewProspect={() => setShowNewProspect(true)}
         />
 
         <div
@@ -54,6 +61,7 @@ export default function HorizonApp() {
                 filters={filters}
                 selectedLab={selectedLab}
                 onLabClick={setSelectedLab}
+                onLabDeselect={handleCloseDetail}
               />
             </div>
           )}
@@ -83,7 +91,11 @@ export default function HorizonApp() {
       </div>
 
       {selectedLab && (
-        <DetailPanel lab={selectedLab} onClose={() => setSelectedLab(null)} />
+        <DetailPanel lab={selectedLab} onClose={handleCloseDetail} />
+      )}
+
+      {showNewProspect && (
+        <NewProspectModal onClose={() => setShowNewProspect(false)} />
       )}
     </div>
   );

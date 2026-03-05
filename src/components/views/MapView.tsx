@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { STAGES, REGIONS } from "@/lib/constants";
@@ -11,6 +11,7 @@ interface MapViewProps {
   filters: Filters;
   selectedLab: Laboratory | null;
   onLabClick: (lab: Laboratory) => void;
+  onLabDeselect: () => void;
 }
 
 function getStageColor(stage: string): string {
@@ -32,12 +33,17 @@ export default function MapView({
   filters,
   selectedLab,
   onLabClick,
+  onLabDeselect,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
-  const popupRef = useRef<maplibregl.Popup | null>(null);
+  const hoverPopupRef = useRef<maplibregl.Popup | null>(null);
+  const selectedLabRef = useRef<Laboratory | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+
+  // Keep ref in sync so event handlers always see latest value
+  selectedLabRef.current = selectedLab;
 
   const filteredLabs = labs.filter((lab) => {
     if (filters.region && filters.region !== "all" && lab.region !== filters.region)
@@ -46,6 +52,33 @@ export default function MapView({
       return false;
     return true;
   });
+
+  // Stable callback refs to avoid marker re-creation on every render
+  const onLabClickRef = useRef(onLabClick);
+  onLabClickRef.current = onLabClick;
+
+  const buildPopupHTML = useCallback((lab: Laboratory) => {
+    const color = getStageColor(lab.stage);
+    const rfpBadge =
+      lab.rfp === "RFP published"
+        ? '<span style="color:#EF4444;font-weight:600;">RFP Published</span>'
+        : lab.rfp === "RFP expected"
+        ? '<span style="color:#F59E0B;font-weight:600;">RFP Expected</span>'
+        : `<span style="color:#94A3B8;">${lab.rfp}</span>`;
+
+    return `
+      <div style="font-family:'DM Sans',sans-serif;padding:4px 2px;min-width:180px;">
+        <div style="font-weight:700;font-size:13px;color:#0F172A;margin-bottom:4px;">${lab.name}</div>
+        <div style="color:#64748B;font-size:11px;margin-bottom:6px;">${lab.city}, ${lab.country}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
+          <span style="background:${color}18;color:${color};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${getStageLabel(lab.stage)}</span>
+          <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:12px;color:${lab.score >= 80 ? "#10B981" : lab.score >= 60 ? "#F59E0B" : "#94A3B8"};">${lab.score}</span>
+        </div>
+        <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Distributor: <strong style="color:#334155;">${lab.distributor}</strong></div>
+        <div style="font-size:11px;">${rfpBadge}</div>
+      </div>
+    `;
+  }, []);
 
   // Initialize map once
   useEffect(() => {
@@ -83,7 +116,6 @@ export default function MapView({
     });
 
     map.addControl(new maplibregl.NavigationControl(), "top-left");
-
     map.on("load", () => setMapLoaded(true));
 
     mapRef.current = map;
@@ -94,14 +126,24 @@ export default function MapView({
     };
   }, []);
 
-  // Update markers when filteredLabs or selectedLab change
+  // Update markers
   useEffect(() => {
     if (!mapRef.current || !mapLoaded) return;
 
-    // Clear previous markers
+    // Clear previous
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
-    popupRef.current?.remove();
+    hoverPopupRef.current?.remove();
+    hoverPopupRef.current = null;
+
+    // Shared hover popup instance
+    const hoverPopup = new maplibregl.Popup({
+      offset: 14,
+      closeButton: false,
+      closeOnClick: false,
+      className: "horizon-popup",
+    });
+    hoverPopupRef.current = hoverPopup;
 
     filteredLabs.forEach((lab) => {
       const size = markerSize(lab.score);
@@ -113,14 +155,15 @@ export default function MapView({
       el.style.height = `${isSelected ? size + 8 : size}px`;
       el.style.borderRadius = "50%";
       el.style.background = color;
-      el.style.border = isSelected ? "3px solid #fff" : "2px solid rgba(255,255,255,0.3)";
+      el.style.border = isSelected
+        ? "3px solid #fff"
+        : "2px solid rgba(255,255,255,0.3)";
       el.style.boxShadow = isSelected
         ? `0 0 14px ${color}80`
         : `0 0 6px ${color}60`;
       el.style.cursor = "pointer";
       el.style.transition = "all 0.2s ease";
 
-      // Pulse animation for qualified/exploring
       if (lab.stage === "qualified" || lab.stage === "exploring") {
         el.style.animation = "pulse-ring 2s infinite";
       }
@@ -129,47 +172,26 @@ export default function MapView({
         .setLngLat([lab.lng, lab.lat])
         .addTo(mapRef.current!);
 
-      // Hover tooltip
-      const popup = new maplibregl.Popup({
-        offset: 12,
-        closeButton: false,
-        closeOnClick: false,
-        className: "horizon-popup",
-      });
-
-      const rfpBadge =
-        lab.rfp === "RFP published"
-          ? '<span style="color:#EF4444;font-weight:600;">RFP Published</span>'
-          : lab.rfp === "RFP expected"
-          ? '<span style="color:#F59E0B;font-weight:600;">RFP Expected</span>'
-          : `<span style="color:#94A3B8;">${lab.rfp}</span>`;
-
-      popup.setHTML(`
-        <div style="font-family:'DM Sans',sans-serif;padding:4px 2px;min-width:180px;">
-          <div style="font-weight:700;font-size:13px;color:#0F172A;margin-bottom:4px;">${lab.name}</div>
-          <div style="color:#64748B;font-size:11px;margin-bottom:6px;">${lab.city}, ${lab.country}</div>
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px;">
-            <span style="background:${color}18;color:${color};padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">${getStageLabel(lab.stage)}</span>
-            <span style="font-family:'Space Mono',monospace;font-weight:700;font-size:12px;color:${lab.score >= 80 ? "#10B981" : lab.score >= 60 ? "#F59E0B" : "#94A3B8"};">${lab.score}</span>
-          </div>
-          <div style="font-size:11px;color:#64748B;margin-bottom:2px;">Distributor: <strong style="color:#334155;">${lab.distributor}</strong></div>
-          <div style="font-size:11px;">${rfpBadge}</div>
-        </div>
-      `);
-
+      // HOVER: show tooltip ONLY when no lab is selected
       el.addEventListener("mouseenter", () => {
-        popup.setLngLat([lab.lng, lab.lat]).addTo(mapRef.current!);
+        if (selectedLabRef.current) return; // panel open → no tooltip
+        hoverPopup.setHTML(buildPopupHTML(lab));
+        hoverPopup.setLngLat([lab.lng, lab.lat]).addTo(mapRef.current!);
       });
+
       el.addEventListener("mouseleave", () => {
-        popup.remove();
+        hoverPopup.remove();
       });
+
+      // CLICK: select lab and hide any tooltip
       el.addEventListener("click", () => {
-        onLabClick(lab);
+        hoverPopup.remove();
+        onLabClickRef.current(lab);
       });
 
       markersRef.current.push(marker);
     });
-  }, [filteredLabs, selectedLab, onLabClick, mapLoaded]);
+  }, [filteredLabs, selectedLab, mapLoaded, buildPopupHTML]);
 
   // Fly to selected lab
   useEffect(() => {

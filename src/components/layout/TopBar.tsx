@@ -7,9 +7,10 @@ interface TopBarProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   labCount: number;
+  onNewProspect: () => void;
 }
 
-export default function TopBar({ filters, onFiltersChange, labCount }: TopBarProps) {
+export default function TopBar({ filters, onFiltersChange, labCount, onNewProspect }: TopBarProps) {
   return (
     <div
       className="flex justify-between items-center"
@@ -79,6 +80,7 @@ export default function TopBar({ filters, onFiltersChange, labCount }: TopBarPro
           {labCount} laboratories
         </span>
         <button
+          onClick={onNewProspect}
           style={{
             padding: "7px 16px",
             borderRadius: 8,
