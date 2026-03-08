@@ -11,15 +11,14 @@ interface ListViewProps {
   onBulkDelete: (ids: (string | number)[]) => void;
 }
 
-type SortKey = "score" | "name" | "stage" | "volume";
+type SortKey = "score" | "name" | "stage" | "tubesPerDay";
 type SortDir = "asc" | "desc";
 
 const HEADERS: { label: string; key?: SortKey; sortable?: boolean }[] = [
   { label: "Laboratory", key: "name", sortable: true },
   { label: "Location" },
   { label: "Type" },
-  { label: "Volume", key: "volume", sortable: true },
-  { label: "Tubes/Day" },
+  { label: "Tubes/Day", key: "tubesPerDay", sortable: true },
   { label: "Automation" },
   { label: "IVD Partner" },
   { label: "Stage", key: "stage", sortable: true },
@@ -48,7 +47,11 @@ export default function ListView({ labs, onLabClick, onBulkDelete }: ListViewPro
     if (sortKey === "score") cmp = a.score - b.score;
     else if (sortKey === "name") cmp = a.name.localeCompare(b.name);
     else if (sortKey === "stage") cmp = a.stage.localeCompare(b.stage);
-    else if (sortKey === "volume") cmp = a.volume.localeCompare(b.volume);
+    else if (sortKey === "tubesPerDay") {
+      const aVal = parseInt(a.tubesPerDay || "0", 10) || 0;
+      const bVal = parseInt(b.tubesPerDay || "0", 10) || 0;
+      cmp = aVal - bVal;
+    }
     return sortDir === "desc" ? -cmp : cmp;
   });
 
@@ -84,7 +87,6 @@ export default function ListView({ labs, onLabClick, onBulkDelete }: ListViewPro
       Country: lab.country,
       Region: lab.region,
       Type: lab.type,
-      Volume: lab.volume,
       "Tubes/Day": lab.tubesPerDay || "",
       Automation: lab.automation,
       "IVD Partner": lab.ivdPartnerInvolved || "None",
@@ -353,18 +355,6 @@ export default function ListView({ labs, onLabClick, onBulkDelete }: ListViewPro
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {lab.volume}
-                  </td>
-                  <td
-                    onClick={() => onLabClick(lab)}
-                    style={{
-                      padding: "11px 14px",
-                      color: "#64748B",
-                      fontFamily: "'Space Mono', monospace",
-                      fontSize: 11,
-                      whiteSpace: "nowrap",
-                    }}
-                  >
                     {lab.tubesPerDay || "—"}
                   </td>
                   <td
@@ -468,7 +458,7 @@ export default function ListView({ labs, onLabClick, onBulkDelete }: ListViewPro
             {sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={12}
+                  colSpan={11}
                   style={{
                     padding: "40px 14px",
                     textAlign: "center",

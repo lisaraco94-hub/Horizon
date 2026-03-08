@@ -1,15 +1,24 @@
-import type { Laboratory, Filters } from "./types";
+import type { Laboratory, Filters, UserRole } from "./types";
 import { STAGES } from "./constants";
 
 const ALL_REGIONS = ["LATAM", "CHINA", "EAST_EU", "APAC"];
 const ALL_STAGES = STAGES.map((s) => s.key);
 
-export function getDefaultFilters(): Filters {
+export function getDefaultFilters(role?: UserRole, labs?: Laboratory[]): Filters {
+  const countries: string[] =
+    role === "global_manager" && labs
+      ? Array.from(new Set(labs.map((l) => l.country))).sort()
+      : [];
+  const distributors: string[] =
+    role === "global_manager" && labs
+      ? Array.from(new Set(labs.map((l) => l.distributor).filter(Boolean))).sort()
+      : [];
+
   return {
     regions: [...ALL_REGIONS],
     stages: ALL_STAGES.filter((s) => s !== "handed_off"),
-    countries: [],
-    distributors: [],
+    countries,
+    distributors,
     createdTime: "all",
   };
 }
