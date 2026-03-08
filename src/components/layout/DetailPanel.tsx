@@ -110,6 +110,22 @@ export default function DetailPanel({ lab, onClose, onEdit, onDelete, onStageCha
               >
                 {getStageLabel(note.toStage)}
               </span>
+              {note.scoreUpdated != null && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    padding: "2px 8px",
+                    borderRadius: 8,
+                    background: "#F0FDF4",
+                    color: "#16A34A",
+                    fontWeight: 700,
+                    fontFamily: "'Space Mono', monospace",
+                    marginLeft: 2,
+                  }}
+                >
+                  Score → {note.scoreUpdated}
+                </span>
+              )}
             </div>
             <div
               style={{

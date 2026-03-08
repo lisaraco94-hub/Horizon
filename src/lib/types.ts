@@ -9,6 +9,7 @@ export interface Note {
   event?: "Stage Change" | "Note";
   fromStage?: Stage;
   toStage?: Stage;
+  scoreUpdated?: number;
 }
 
 export interface Laboratory {
