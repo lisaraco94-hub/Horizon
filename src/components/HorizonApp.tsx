@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useUser } from "@/lib/UserContext";
 import { getDefaultFilters, filterLabs } from "@/lib/filterLabs";
 import LoginPage from "./LoginPage";
@@ -34,11 +34,19 @@ export default function HorizonApp() {
   const [showNewProspect, setShowNewProspect] = useState(false);
   const [editingLab, setEditingLab] = useState<Laboratory | null>(null);
   const [stageChangeLab, setStageChangeLab] = useState<Laboratory | null>(null);
+  const filtersInitialized = useRef(false);
 
   if (!user) return <LoginPage />;
 
   const visibleLabs = getVisibleLabs();
   const filteredLabs = filterLabs(visibleLabs, filters);
+
+  // Initialize filters with all countries/distributors for Global Manager
+  if (!filtersInitialized.current && user.role === "global_manager" && visibleLabs.length > 0) {
+    filtersInitialized.current = true;
+    const defaultFilters = getDefaultFilters(user.role, visibleLabs);
+    setFilters(defaultFilters);
+  }
 
   const handleCloseDetail = () => {
     setSelectedLab(null);

@@ -1,10 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { STAGES, REGIONS } from "@/lib/constants";
 import { generateCoverageBriefing } from "@/lib/coverage";
 import { generateIntelligenceBriefing } from "@/lib/briefing";
 import type { Laboratory } from "@/lib/types";
+
+function formatBriefingDate(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
 interface DashboardViewProps {
   labs: Laboratory[];
@@ -164,10 +172,37 @@ function renderBold(text: string) {
 
 export default function DashboardView({ labs, onLabClick }: DashboardViewProps) {
   const [animated, setAnimated] = useState(false);
+  const [briefingDate, setBriefingDate] = useState<Date>(new Date());
+  const [briefingText, setBriefingText] = useState("");
+
+  const regenerateBriefing = useCallback(() => {
+    const intel = generateIntelligenceBriefing(labs);
+    const coverage = generateCoverageBriefing(labs);
+    setBriefingText(intel + "\n\n" + coverage);
+    setBriefingDate(new Date());
+  }, [labs]);
+
   useEffect(() => {
     const t = setTimeout(() => setAnimated(true), 80);
     return () => clearTimeout(t);
   }, []);
+
+  // Regenerate when labs change
+  useEffect(() => {
+    regenerateBriefing();
+  }, [regenerateBriefing]);
+
+  // Automatic weekly regeneration: check every minute if it's Monday 07:00 UTC
+  useEffect(() => {
+    const checkWeeklyUpdate = () => {
+      const now = new Date();
+      if (now.getUTCDay() === 1 && now.getUTCHours() === 7 && now.getUTCMinutes() === 0) {
+        regenerateBriefing();
+      }
+    };
+    const interval = setInterval(checkWeeklyUpdate, 60_000);
+    return () => clearInterval(interval);
+  }, [regenerateBriefing]);
 
   const activePipeline = labs.filter(
     (l) => !["mapped", "handed_off"].includes(l.stage)
@@ -180,10 +215,6 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
   const upcomingRfps = labs
     .filter((l) => l.rfpDate)
     .sort((a, b) => (a.rfpDate! > b.rfpDate! ? 1 : -1));
-
-  const intelligenceBriefing = generateIntelligenceBriefing(labs);
-  const coverageBriefing = generateCoverageBriefing(labs);
-  const fullBriefing = intelligenceBriefing + "\n\n" + coverageBriefing;
 
   return (
     <div style={{ paddingBottom: 24 }}>
@@ -537,7 +568,7 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
         </div>
       </div>
 
-      {/* AI Intelligence Briefing */}
+      {/* Weekly Intelligence Briefing */}
       <div
         style={{
           background: "linear-gradient(135deg, #0A1628 0%, #1E293B 100%)",
@@ -568,7 +599,7 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
           >
             <span style={{ fontSize: 15, color: "#fff" }}>✦</span>
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div
               style={{
                 fontSize: 14,
@@ -577,7 +608,7 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
-              AI Intelligence Briefing
+              Weekly Intelligence Briefing — {formatBriefingDate(briefingDate)}
             </div>
             <div
               style={{
@@ -589,8 +620,35 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
               Auto-generated weekly · Includes dynamic coverage analysis
             </div>
           </div>
+          <button
+            onClick={regenerateBriefing}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.15)",
+              background: "rgba(255,255,255,0.08)",
+              color: "#CBD5E1",
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: "'DM Sans', sans-serif",
+              cursor: "pointer",
+              transition: "all 0.15s",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.15)";
+              e.currentTarget.style.color = "#F8FAFC";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.color = "#CBD5E1";
+            }}
+          >
+            Refresh Briefing
+          </button>
         </div>
-        <AiBriefingBlock text={fullBriefing} />
+        <AiBriefingBlock text={briefingText} />
       </div>
     </div>
   );
