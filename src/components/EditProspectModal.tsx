@@ -8,7 +8,7 @@ import {
   STAGES,
   IVD_PARTNERS,
 } from "@/lib/constants";
-import type { Laboratory, Region, Stage } from "@/lib/types";
+import type { Laboratory, Region } from "@/lib/types";
 
 interface EditProspectModalProps {
   lab: Laboratory;
@@ -35,7 +35,6 @@ export default function EditProspectModal({ lab, onSave, onClose }: EditProspect
       ? ""
       : lab.ivdPartnerInvolved || ""
   );
-  const [stage, setStage] = useState<Stage>(lab.stage);
   const [notesText, setNotesText] = useState("");
   const [error, setError] = useState("");
 
@@ -72,7 +71,6 @@ export default function EditProspectModal({ lab, onSave, onClose }: EditProspect
       distributor: distributor.trim(),
       tubesPerDay: tubesPerDay.trim() || undefined,
       ivdPartnerInvolved: resolvedPartner,
-      stage,
       notes: newNotes,
     };
 
@@ -285,18 +283,34 @@ export default function EditProspectModal({ lab, onSave, onClose }: EditProspect
               />
             </div>
 
-            {/* Stage */}
+            {/* Stage (read-only) */}
             <div>
               <label style={labelStyle}>Stage</label>
-              <select
-                value={stage}
-                onChange={(e) => setStage(e.target.value as Stage)}
-                style={selectStyle}
+              <div
+                style={{
+                  ...selectStyle,
+                  background: "#F1F5F9",
+                  color: "#94A3B8",
+                  cursor: "not-allowed",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
               >
-                {STAGES.map((s) => (
-                  <option key={s.key} value={s.key}>{s.label}</option>
-                ))}
-              </select>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: STAGES.find((s) => s.key === lab.stage)?.color,
+                    flexShrink: 0,
+                  }}
+                />
+                {STAGES.find((s) => s.key === lab.stage)?.label}
+                <span style={{ fontSize: 10, marginLeft: "auto", color: "#CBD5E1" }}>
+                  Use stage control
+                </span>
+              </div>
             </div>
 
             {/* IVD Partner Involved */}

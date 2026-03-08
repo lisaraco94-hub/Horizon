@@ -8,6 +8,8 @@ export function getDefaultFilters(): Filters {
   return {
     regions: [...ALL_REGIONS],
     stages: ALL_STAGES.filter((s) => s !== "handed_off"),
+    countries: [],
+    distributors: [],
     createdTime: "all",
   };
 }
@@ -16,6 +18,8 @@ export function filterLabs(labs: Laboratory[], filters: Filters): Laboratory[] {
   return labs.filter((lab) => {
     if (filters.regions.length > 0 && !filters.regions.includes(lab.region)) return false;
     if (filters.stages.length > 0 && !filters.stages.includes(lab.stage)) return false;
+    if (filters.countries.length > 0 && !filters.countries.includes(lab.country)) return false;
+    if (filters.distributors.length > 0 && !filters.distributors.includes(lab.distributor)) return false;
 
     if (filters.createdTime !== "all" && lab.createdAt) {
       const created = new Date(lab.createdAt);

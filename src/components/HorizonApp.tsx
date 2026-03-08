@@ -97,6 +97,8 @@ export default function HorizonApp() {
           onFiltersChange={setFilters}
           labCount={filteredLabs.length}
           onNewProspect={() => setShowNewProspect(true)}
+          user={user}
+          visibleLabs={visibleLabs}
         />
 
         <div
