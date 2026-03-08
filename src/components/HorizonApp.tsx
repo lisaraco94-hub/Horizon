@@ -18,6 +18,14 @@ import type { Laboratory, Filters, Stage } from "@/lib/types";
 
 type View = "map" | "pipeline" | "list" | "dashboard";
 
+const STAGE_SCORES: Record<Stage, number> = {
+  mapped: 20,
+  engaged: 40,
+  exploring: 60,
+  qualified: 80,
+  handed_off: 100,
+};
+
 export default function HorizonApp() {
   const { user, getVisibleLabs, updateLab, deleteLab } = useUser();
   const [activeView, setActiveView] = useState<View>("map");
@@ -55,6 +63,7 @@ export default function HorizonApp() {
 
   const handleStageChange = (newStage: Stage, comment: string) => {
     if (!stageChangeLab) return;
+    const newScore = STAGE_SCORES[newStage];
     const activityNote = {
       date: new Date().toISOString().slice(0, 10),
       author: user.name,
@@ -62,10 +71,12 @@ export default function HorizonApp() {
       event: "Stage Change" as const,
       fromStage: stageChangeLab.stage,
       toStage: newStage,
+      scoreUpdated: newScore,
     };
     const updated: Laboratory = {
       ...stageChangeLab,
       stage: newStage,
+      score: newScore,
       notes: [activityNote, ...stageChangeLab.notes],
     };
     updateLab(updated);
