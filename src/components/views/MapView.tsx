@@ -4,11 +4,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { STAGES, REGIONS } from "@/lib/constants";
-import type { Laboratory, Filters } from "@/lib/types";
+import type { Laboratory } from "@/lib/types";
 
 interface MapViewProps {
   labs: Laboratory[];
-  filters: Filters;
   selectedLab: Laboratory | null;
   onLabClick: (lab: Laboratory) => void;
   onLabDeselect: () => void;
@@ -30,7 +29,6 @@ function markerSize(score: number): number {
 
 export default function MapView({
   labs,
-  filters,
   selectedLab,
   onLabClick,
   onLabDeselect,
@@ -45,13 +43,7 @@ export default function MapView({
   // Keep ref in sync so event handlers always see latest value
   selectedLabRef.current = selectedLab;
 
-  const filteredLabs = labs.filter((lab) => {
-    if (filters.region && filters.region !== "all" && lab.region !== filters.region)
-      return false;
-    if (filters.stage && filters.stage !== "all" && lab.stage !== filters.stage)
-      return false;
-    return true;
-  });
+  const filteredLabs = labs;
 
   // Stable callback refs to avoid marker re-creation on every render
   const onLabClickRef = useRef(onLabClick);

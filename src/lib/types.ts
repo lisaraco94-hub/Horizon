@@ -32,11 +32,13 @@ export interface Laboratory {
   rfpDate?: string;
   notes: Note[];
   distributor: string;
+  createdAt?: string;
 }
 
 export interface Filters {
-  region: string;
-  stage: string;
+  regions: string[];
+  stages: string[];
+  createdTime: "all" | "last_week" | "last_month";
 }
 
 // ─── Role-based access control ──────────────────────────────────────────────

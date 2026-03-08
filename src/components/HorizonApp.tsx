@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useUser } from "@/lib/UserContext";
+import { getDefaultFilters, filterLabs } from "@/lib/filterLabs";
 import LoginPage from "./LoginPage";
 import Sidebar from "./layout/Sidebar";
 import TopBar from "./layout/TopBar";
@@ -21,7 +22,7 @@ export default function HorizonApp() {
   const { user, getVisibleLabs, updateLab, deleteLab } = useUser();
   const [activeView, setActiveView] = useState<View>("map");
   const [selectedLab, setSelectedLab] = useState<Laboratory | null>(null);
-  const [filters, setFilters] = useState<Filters>({ region: "all", stage: "all" });
+  const [filters, setFilters] = useState<Filters>(getDefaultFilters());
   const [showNewProspect, setShowNewProspect] = useState(false);
   const [editingLab, setEditingLab] = useState<Laboratory | null>(null);
   const [stageChangeLab, setStageChangeLab] = useState<Laboratory | null>(null);
@@ -29,11 +30,7 @@ export default function HorizonApp() {
   if (!user) return <LoginPage />;
 
   const visibleLabs = getVisibleLabs();
-  const filteredLabs = visibleLabs.filter((lab) => {
-    if (filters.region !== "all" && lab.region !== filters.region) return false;
-    if (filters.stage !== "all" && lab.stage !== filters.stage) return false;
-    return true;
-  });
+  const filteredLabs = filterLabs(visibleLabs, filters);
 
   const handleCloseDetail = () => {
     setSelectedLab(null);
@@ -48,6 +45,12 @@ export default function HorizonApp() {
   const handleDelete = (lab: Laboratory) => {
     deleteLab(lab.id);
     setSelectedLab(null);
+  };
+
+  const handleBulkDelete = (ids: (string | number)[]) => {
+    for (const id of ids) {
+      deleteLab(id);
+    }
   };
 
   const handleStageChange = (newStage: Stage, comment: string) => {
@@ -92,8 +95,7 @@ export default function HorizonApp() {
           {activeView === "map" && (
             <div className="h-full relative">
               <MapView
-                labs={visibleLabs}
-                filters={filters}
+                labs={filteredLabs}
                 selectedLab={selectedLab}
                 onLabClick={setSelectedLab}
                 onLabDeselect={handleCloseDetail}
@@ -104,8 +106,7 @@ export default function HorizonApp() {
           {activeView === "pipeline" && (
             <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
               <PipelineView
-                labs={visibleLabs}
-                filters={filters}
+                labs={filteredLabs}
                 onLabClick={setSelectedLab}
               />
             </div>
@@ -113,9 +114,9 @@ export default function HorizonApp() {
 
           {activeView === "list" && (
             <ListView
-              labs={visibleLabs}
-              filters={filters}
+              labs={filteredLabs}
               onLabClick={setSelectedLab}
+              onBulkDelete={handleBulkDelete}
             />
           )}
 

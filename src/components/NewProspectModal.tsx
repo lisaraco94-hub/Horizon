@@ -134,6 +134,7 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
       rfpDate: rfpDate || undefined,
       notes: initialNotes,
       distributor: distributor.trim(),
+      createdAt: new Date().toISOString().slice(0, 10),
     };
 
     const score = calculateScore(newLab);
