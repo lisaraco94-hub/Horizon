@@ -1,4 +1,4 @@
-import { REGION_TARGET_MARKETS, DIRECT_MARKETS, REGIONS } from "./constants";
+import { REGION_TARGET_MARKETS, REGIONS } from "./constants";
 import type { Laboratory, Region, Stage, CountryCoverage, CoverageCategory } from "./types";
 
 export function computeCoverage(labs: Laboratory[]): CountryCoverage[] {
@@ -6,9 +6,7 @@ export function computeCoverage(labs: Laboratory[]): CountryCoverage[] {
 
   for (const [regionKey, countries] of Object.entries(REGION_TARGET_MARKETS)) {
     for (const country of countries) {
-      if (!DIRECT_MARKETS.includes(country)) {
-        allExportCountries.push({ country, region: regionKey as Region });
-      }
+      allExportCountries.push({ country, region: regionKey as Region });
     }
   }
 

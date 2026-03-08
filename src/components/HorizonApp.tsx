@@ -1,26 +1,30 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useUser } from "@/lib/UserContext";
 import LoginPage from "./LoginPage";
 import Sidebar from "./layout/Sidebar";
 import TopBar from "./layout/TopBar";
 import DetailPanel from "./layout/DetailPanel";
 import NewProspectModal from "./NewProspectModal";
+import EditProspectModal from "./EditProspectModal";
+import StageChangeModal from "./StageChangeModal";
 import MapView from "./views/MapView";
 import PipelineView from "./views/PipelineView";
 import ListView from "./views/ListView";
 import DashboardView from "./views/DashboardView";
-import type { Laboratory, Filters } from "@/lib/types";
+import type { Laboratory, Filters, Stage } from "@/lib/types";
 
 type View = "map" | "pipeline" | "list" | "dashboard";
 
 export default function HorizonApp() {
-  const { user, getVisibleLabs } = useUser();
+  const { user, getVisibleLabs, updateLab, deleteLab } = useUser();
   const [activeView, setActiveView] = useState<View>("map");
   const [selectedLab, setSelectedLab] = useState<Laboratory | null>(null);
   const [filters, setFilters] = useState<Filters>({ region: "all", stage: "all" });
   const [showNewProspect, setShowNewProspect] = useState(false);
+  const [editingLab, setEditingLab] = useState<Laboratory | null>(null);
+  const [stageChangeLab, setStageChangeLab] = useState<Laboratory | null>(null);
 
   if (!user) return <LoginPage />;
 
@@ -33,6 +37,37 @@ export default function HorizonApp() {
 
   const handleCloseDetail = () => {
     setSelectedLab(null);
+  };
+
+  const handleEditSave = (updated: Laboratory) => {
+    updateLab(updated);
+    setSelectedLab(updated);
+    setEditingLab(null);
+  };
+
+  const handleDelete = (lab: Laboratory) => {
+    deleteLab(lab.id);
+    setSelectedLab(null);
+  };
+
+  const handleStageChange = (newStage: Stage, comment: string) => {
+    if (!stageChangeLab) return;
+    const activityNote = {
+      date: new Date().toISOString().slice(0, 10),
+      author: user.name,
+      text: comment,
+      event: "Stage Change" as const,
+      fromStage: stageChangeLab.stage,
+      toStage: newStage,
+    };
+    const updated: Laboratory = {
+      ...stageChangeLab,
+      stage: newStage,
+      notes: [activityNote, ...stageChangeLab.notes],
+    };
+    updateLab(updated);
+    setSelectedLab(updated);
+    setStageChangeLab(null);
   };
 
   return (
@@ -91,11 +126,33 @@ export default function HorizonApp() {
       </div>
 
       {selectedLab && (
-        <DetailPanel lab={selectedLab} onClose={handleCloseDetail} />
+        <DetailPanel
+          lab={selectedLab}
+          onClose={handleCloseDetail}
+          onEdit={setEditingLab}
+          onDelete={handleDelete}
+          onStageChange={setStageChangeLab}
+        />
       )}
 
       {showNewProspect && (
         <NewProspectModal onClose={() => setShowNewProspect(false)} />
+      )}
+
+      {editingLab && (
+        <EditProspectModal
+          lab={editingLab}
+          onSave={handleEditSave}
+          onClose={() => setEditingLab(null)}
+        />
+      )}
+
+      {stageChangeLab && (
+        <StageChangeModal
+          lab={stageChangeLab}
+          onConfirm={handleStageChange}
+          onClose={() => setStageChangeLab(null)}
+        />
       )}
     </div>
   );
