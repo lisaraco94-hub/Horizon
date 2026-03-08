@@ -19,7 +19,9 @@ const HEADERS: { label: string; key?: SortKey; sortable?: boolean }[] = [
   { label: "Location" },
   { label: "Type" },
   { label: "Volume", key: "volume", sortable: true },
+  { label: "Tubes/Day" },
   { label: "Automation" },
+  { label: "IVD Partner" },
   { label: "Stage", key: "stage", sortable: true },
   { label: "Score", key: "score", sortable: true },
   { label: "Distributor" },
@@ -62,7 +64,9 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
       Region: lab.region,
       Type: lab.type,
       Volume: lab.volume,
+      "Tubes/Day": lab.tubesPerDay || "",
       Automation: lab.automation,
+      "IVD Partner": lab.ivdPartnerInvolved || "None",
       Stage: STAGES.find((s) => s.key === lab.stage)?.label || lab.stage,
       Score: lab.score,
       Distributor: lab.distributor,
@@ -265,6 +269,17 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: 11,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {lab.tubesPerDay || "—"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 14px",
+                      color: "#64748B",
                       fontSize: 11,
                       maxWidth: 140,
                     }}
@@ -278,6 +293,16 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     >
                       {lab.automation?.split("(")[0]?.trim()}
                     </div>
+                  </td>
+                  <td
+                    style={{
+                      padding: "11px 14px",
+                      color: "#64748B",
+                      fontSize: 11,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {lab.ivdPartnerInvolved || "None"}
                   </td>
                   <td style={{ padding: "11px 14px" }}>
                     <span
@@ -348,7 +373,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
             {sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={11}
                   style={{
                     padding: "40px 14px",
                     textAlign: "center",

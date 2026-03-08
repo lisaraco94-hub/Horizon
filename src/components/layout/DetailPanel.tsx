@@ -15,9 +15,11 @@ export default function DetailPanel({ lab, onClose }: DetailPanelProps) {
   const details = [
     { label: "Institution Type", value: lab.type },
     { label: "Volume", value: lab.volume + " /day" },
+    { label: "Tubes / Day", value: lab.tubesPerDay || "—" },
     { label: "Automation", value: lab.automation?.split("(")[0]?.trim() },
     { label: "Region", value: region.label },
     { label: "Distributor", value: lab.distributor },
+    { label: "IVD Partner", value: lab.ivdPartnerInvolved || "None" },
     {
       label: "RFP Status",
       value: lab.rfp + (lab.rfpDate ? ` (${lab.rfpDate})` : ""),
