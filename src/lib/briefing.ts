@@ -174,6 +174,70 @@ export function generateIntelligenceBriefing(labs: Laboratory[]): string {
     sections.push("## Pipeline Risks\n\n" + risks.slice(0, 3).map((s) => `• ${s}`).join("\n"));
   }
 
+  // ── Distributor Performance ──
+  const distPerf: string[] = [];
+  const distMap: Record<string, Laboratory[]> = {};
+  for (const lab of labs) {
+    if (!lab.distributor) continue;
+    if (!distMap[lab.distributor]) distMap[lab.distributor] = [];
+    distMap[lab.distributor].push(lab);
+  }
+
+  const distStats = Object.entries(distMap).map(([name, dlabs]) => {
+    const avg = Math.round(dlabs.reduce((a, l) => a + l.score, 0) / dlabs.length);
+    const hasQualified = dlabs.some((l) => l.stage === "qualified" || l.stage === "handed_off");
+    const hasProgression = dlabs.some((l) =>
+      l.notes.some((n) => n.event === "Stage Change")
+    );
+    const region = regionLabel(dlabs[0].region);
+    return { name, count: dlabs.length, avg, hasQualified, hasProgression, region };
+  });
+
+  // Strongest distributors
+  const strong = distStats
+    .filter((d) => d.hasQualified || d.avg >= 70)
+    .sort((a, b) => b.avg - a.avg);
+  if (strong.length > 0) {
+    const top = strong[0];
+    distPerf.push(`**${top.name}** shows the strongest pipeline development in ${top.region} with prospects progressing to advanced stages.`);
+  }
+
+  // Weak distributors
+  const weak = distStats.filter((d) => d.avg < 45 && d.count >= 1 && !d.hasQualified);
+  if (weak.length > 0) {
+    distPerf.push(`**${weak.map((d) => d.name).join(", ")}** ${weak.length > 1 ? "show" : "shows"} limited pipeline traction — consider joint engagement plans to accelerate progression.`);
+  }
+
+  // Distributors with no stage progression
+  const noProgression = distStats.filter((d) => !d.hasProgression && d.count >= 1);
+  if (noProgression.length > 0) {
+    distPerf.push(`**${noProgression.map((d) => d.name).join(", ")}**: no stage changes recorded — distributor activation or review recommended.`);
+  }
+
+  if (distPerf.length > 0) {
+    sections.push("## Distributor Performance\n\n" + distPerf.slice(0, 3).map((s) => `• ${s}`).join("\n"));
+  }
+
+  // ── Stalled Opportunities ──
+  const stalled: string[] = [];
+  const now = new Date();
+  for (const lab of labs) {
+    if (lab.stage === "handed_off") continue;
+    const lastDate = lab.notes.length > 0 ? lab.notes[0].date : lab.createdAt;
+    if (!lastDate) continue;
+    const last = new Date(lastDate);
+    const daysSince = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysSince > 60) {
+      stalled.push(
+        `**${lab.name}** has remained in ${stageLabel(lab.stage)} stage for ${daysSince} days without recent activity.`
+      );
+    }
+  }
+
+  if (stalled.length > 0) {
+    sections.push("## Stalled Opportunities\n\n" + stalled.slice(0, 3).map((s) => `• ${s}`).join("\n"));
+  }
+
   // ── Recommended Actions ──
   const actions: string[] = [];
 
