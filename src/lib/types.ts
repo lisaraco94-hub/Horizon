@@ -18,8 +18,10 @@ export interface Laboratory {
   lng: number;
   type: string;
   volume: string;
+  tubesPerDay?: string;
   automation: string;
   ivd: string[];
+  ivdPartnerInvolved?: string;
   stage: Stage;
   score: number;
   product: string[];
@@ -48,4 +50,16 @@ export interface AppUser {
   region?: Region;
   distributor?: string;
   country?: string;
+}
+
+// ─── Coverage analysis types ────────────────────────────────────────────────
+export type CoverageCategory = "No Coverage" | "Early Coverage" | "Active Pipeline";
+
+export interface CountryCoverage {
+  country: string;
+  region: Region;
+  prospectCount: number;
+  avgScore: number;
+  stageDistribution: Record<Stage, number>;
+  category: CoverageCategory;
 }
