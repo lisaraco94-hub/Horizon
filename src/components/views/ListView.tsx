@@ -2,13 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { STAGES } from "@/lib/constants";
-import type { Laboratory, Filters } from "@/lib/types";
+import type { Laboratory } from "@/lib/types";
 import * as XLSX from "xlsx";
 
 interface ListViewProps {
   labs: Laboratory[];
-  filters: Filters;
   onLabClick: (lab: Laboratory) => void;
+  onBulkDelete: (ids: (string | number)[]) => void;
 }
 
 type SortKey = "score" | "name" | "stage" | "volume";
@@ -28,15 +28,11 @@ const HEADERS: { label: string; key?: SortKey; sortable?: boolean }[] = [
   { label: "RFP" },
 ];
 
-export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
+export default function ListView({ labs, onLabClick, onBulkDelete }: ListViewProps) {
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  const filteredLabs = labs.filter((lab) => {
-    if (filters.region !== "all" && lab.region !== filters.region) return false;
-    if (filters.stage !== "all" && lab.stage !== filters.stage) return false;
-    return true;
-  });
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -47,7 +43,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
     }
   };
 
-  const sorted = [...filteredLabs].sort((a, b) => {
+  const sorted = [...labs].sort((a, b) => {
     let cmp = 0;
     if (sortKey === "score") cmp = a.score - b.score;
     else if (sortKey === "name") cmp = a.name.localeCompare(b.name);
@@ -55,6 +51,31 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
     else if (sortKey === "volume") cmp = a.volume.localeCompare(b.volume);
     return sortDir === "desc" ? -cmp : cmp;
   });
+
+  const allSelected = sorted.length > 0 && selectedIds.size === sorted.length;
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sorted.map((l) => l.id)));
+    }
+  };
+
+  const toggleSelect = (id: string | number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    onBulkDelete(Array.from(selectedIds));
+    setSelectedIds(new Set());
+    setShowDeleteConfirm(false);
+  };
 
   const exportExcel = useCallback(() => {
     const rows = sorted.map((lab) => ({
@@ -74,7 +95,6 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
       "RFP Date": lab.rfpDate || "",
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
-    // Bold header row
     const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
     for (let c = range.s.c; c <= range.e.c; c++) {
       const addr = XLSX.utils.encode_cell({ r: 0, c });
@@ -108,10 +128,47 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
       <div
         style={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
+          alignItems: "center",
           marginBottom: 12,
         }}
       >
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {selectedIds.size > 0 && (
+            <>
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "#334155",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 600,
+                }}
+              >
+                {selectedIds.size} selected
+              </span>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "6px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #FECACA",
+                  background: "#FEF2F2",
+                  color: "#DC2626",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "'DM Sans', sans-serif",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                Delete Selected
+              </button>
+            </>
+          )}
+        </div>
         <button
           onClick={exportExcel}
           style={{
@@ -165,6 +222,21 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
         >
           <thead>
             <tr style={{ background: "#F8FAFC" }}>
+              {/* Checkbox column */}
+              <th
+                style={{
+                  padding: "10px 10px 10px 14px",
+                  borderBottom: "1px solid #E2E8F0",
+                  width: 36,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  style={{ accentColor: "#3B82F6", cursor: "pointer" }}
+                />
+              </th>
               {HEADERS.map((h) => (
                 <th
                   key={h.label}
@@ -207,24 +279,37 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                   : lab.rfp === "RFP expected"
                   ? "#F59E0B"
                   : "#94A3B8";
+              const isChecked = selectedIds.has(lab.id);
 
               return (
                 <tr
                   key={lab.id}
-                  onClick={() => onLabClick(lab)}
                   style={{
                     cursor: "pointer",
                     borderBottom: "1px solid #F1F5F9",
                     transition: "background 0.1s",
+                    background: isChecked ? "#EFF6FF" : "transparent",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background = "#F8FAFC")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
+                  onMouseEnter={(e) => {
+                    if (!isChecked) e.currentTarget.style.background = "#F8FAFC";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isChecked ? "#EFF6FF" : "transparent";
+                  }}
                 >
                   <td
+                    style={{ padding: "11px 10px 11px 14px" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleSelect(lab.id)}
+                      style={{ accentColor: "#3B82F6", cursor: "pointer" }}
+                    />
+                  </td>
+                  <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       fontWeight: 600,
@@ -243,6 +328,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     </div>
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -251,10 +337,14 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                   >
                     {lab.city}, {lab.country}
                   </td>
-                  <td style={{ padding: "11px 14px", color: "#64748B" }}>
+                  <td
+                    onClick={() => onLabClick(lab)}
+                    style={{ padding: "11px 14px", color: "#64748B" }}
+                  >
                     {lab.type}
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -266,6 +356,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     {lab.volume}
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -277,6 +368,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     {lab.tubesPerDay || "—"}
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -295,6 +387,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     </div>
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -304,7 +397,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                   >
                     {lab.ivdPartnerInvolved || "None"}
                   </td>
-                  <td style={{ padding: "11px 14px" }}>
+                  <td onClick={() => onLabClick(lab)} style={{ padding: "11px 14px" }}>
                     <span
                       style={{
                         background: `${stage.color}18`,
@@ -320,7 +413,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                       {stage.label}
                     </span>
                   </td>
-                  <td style={{ padding: "11px 14px" }}>
+                  <td onClick={() => onLabClick(lab)} style={{ padding: "11px 14px" }}>
                     <span
                       style={{
                         fontFamily: "'Space Mono', monospace",
@@ -338,6 +431,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     </span>
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       color: "#64748B",
@@ -348,6 +442,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
                     {lab.distributor}
                   </td>
                   <td
+                    onClick={() => onLabClick(lab)}
                     style={{
                       padding: "11px 14px",
                       fontSize: 11,
@@ -373,7 +468,7 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
             {sorted.length === 0 && (
               <tr>
                 <td
-                  colSpan={11}
+                  colSpan={12}
                   style={{
                     padding: "40px 14px",
                     textAlign: "center",
@@ -389,6 +484,97 @@ export default function ListView({ labs, filters, onLabClick }: ListViewProps) {
           </tbody>
         </table>
       </div>
+
+      {/* Bulk delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 250,
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowDeleteConfirm(false);
+          }}
+        >
+          <div
+            style={{
+              width: 420,
+              background: "#fff",
+              borderRadius: 16,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+              padding: "24px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#0F172A",
+                fontFamily: "'DM Sans', sans-serif",
+                marginBottom: 8,
+              }}
+            >
+              Delete Selected Prospects
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "#64748B",
+                fontFamily: "'DM Sans', sans-serif",
+                marginBottom: 20,
+                lineHeight: 1.5,
+              }}
+            >
+              Are you sure you want to delete the selected prospects?
+              <br />
+              <strong style={{ color: "#0F172A" }}>
+                {selectedIds.size} prospect{selectedIds.size > 1 ? "s" : ""} will be permanently removed.
+              </strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  padding: "8px 20px",
+                  borderRadius: 8,
+                  border: "1px solid #E2E8F0",
+                  background: "#fff",
+                  color: "#64748B",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                style={{
+                  padding: "8px 24px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "linear-gradient(135deg, #EF4444, #DC2626)",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                  boxShadow: "0 2px 8px rgba(220,38,38,0.3)",
+                }}
+              >
+                Delete {selectedIds.size} Prospect{selectedIds.size > 1 ? "s" : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

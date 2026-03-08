@@ -1,11 +1,10 @@
 "use client";
 
 import { STAGES } from "@/lib/constants";
-import type { Laboratory, Filters } from "@/lib/types";
+import type { Laboratory } from "@/lib/types";
 
 interface PipelineViewProps {
   labs: Laboratory[];
-  filters: Filters;
   onLabClick: (lab: Laboratory) => void;
 }
 
@@ -155,18 +154,11 @@ const PipelineCard = ({
 
 export default function PipelineView({
   labs,
-  filters,
   onLabClick,
 }: PipelineViewProps) {
-  const filteredLabs = labs.filter((lab) => {
-    if (filters.region !== "all" && lab.region !== filters.region) return false;
-    if (filters.stage !== "all" && lab.stage !== filters.stage) return false;
-    return true;
-  });
-
   const stageGroups = STAGES.map((s) => ({
     ...s,
-    labs: filteredLabs.filter((l) => l.stage === s.key),
+    labs: labs.filter((l) => l.stage === s.key),
   }));
 
   return (
