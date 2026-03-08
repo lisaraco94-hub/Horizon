@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STAGES, REGIONS, AI_BRIEFING } from "@/lib/constants";
+import { STAGES, REGIONS, AI_BRIEFING_STATIC } from "@/lib/constants";
+import { generateCoverageBriefing } from "@/lib/coverage";
 import type { Laboratory } from "@/lib/types";
 
 interface DashboardViewProps {
@@ -99,7 +100,6 @@ const AiBriefingBlock = ({ text }: { text: string }) => {
           );
         }
         if (line.startsWith("•")) {
-          // parse bold inside bullet
           const inner = line.slice(1).trim();
           return (
             <div
@@ -172,13 +172,16 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
     (l) => !["mapped", "handed_off"].includes(l.stage)
   ).length;
   const qualified = labs.filter((l) => l.stage === "qualified").length;
-  const avgScore = Math.round(
-    labs.reduce((a, l) => a + l.score, 0) / labs.length
-  );
+  const avgScore = labs.length
+    ? Math.round(labs.reduce((a, l) => a + l.score, 0) / labs.length)
+    : 0;
 
   const upcomingRfps = labs
     .filter((l) => l.rfpDate)
     .sort((a, b) => (a.rfpDate! > b.rfpDate! ? 1 : -1));
+
+  const coverageBriefing = generateCoverageBriefing(labs);
+  const fullBriefing = AI_BRIEFING_STATIC + "\n\n" + coverageBriefing;
 
   return (
     <div style={{ paddingBottom: 24 }}>
@@ -238,7 +241,7 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
           </div>
           {STAGES.map((s) => {
             const count = labs.filter((l) => l.stage === s.key).length;
-            const pct = (count / labs.length) * 100;
+            const pct = labs.length ? (count / labs.length) * 100 : 0;
             return (
               <div
                 key={s.key}
@@ -581,11 +584,11 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
                 fontFamily: "'DM Sans', sans-serif",
               }}
             >
-              Auto-generated weekly · Last updated March 3, 2026
+              Auto-generated weekly · Includes dynamic coverage analysis
             </div>
           </div>
         </div>
-        <AiBriefingBlock text={AI_BRIEFING} />
+        <AiBriefingBlock text={fullBriefing} />
       </div>
     </div>
   );

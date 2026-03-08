@@ -11,6 +11,7 @@ import {
   VOLUME_RANGES,
   AUTOMATION_STATUS,
   IVD_VENDORS,
+  IVD_PARTNERS,
   PRODUCTS,
   RFP_STATUS,
 } from "@/lib/constants";
@@ -68,12 +69,16 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
   const [distributor, setDistributor] = useState(user?.distributor || "");
   const [type, setType] = useState(INSTITUTION_TYPES[0]);
   const [volume, setVolume] = useState(VOLUME_RANGES[0]);
+  const [tubesPerDay, setTubesPerDay] = useState("");
   const [automation, setAutomation] = useState(AUTOMATION_STATUS[0]);
   const [ivd, setIvd] = useState<string[]>([]);
+  const [ivdPartner, setIvdPartner] = useState("None");
+  const [ivdPartnerOther, setIvdPartnerOther] = useState("");
   const [product, setProduct] = useState<string[]>([]);
   const [rfp, setRfp] = useState(RFP_STATUS[0]);
   const [rfpDate, setRfpDate] = useState("");
   const [stage, setStage] = useState<Stage>("mapped");
+  const [notesText, setNotesText] = useState("");
   const [error, setError] = useState("");
 
   const availableCountries = REGION_TARGET_MARKETS[region] || [];
@@ -96,6 +101,18 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
     }
 
     const coords = COUNTRY_COORDS[country] || { lat: 0, lng: 0 };
+    const resolvedPartner =
+      ivdPartner === "Other" ? ivdPartnerOther.trim() || "Other" : ivdPartner;
+
+    const initialNotes = notesText.trim()
+      ? [
+          {
+            date: new Date().toISOString().slice(0, 10),
+            author: user?.name || "Unknown",
+            text: notesText.trim(),
+          },
+        ]
+      : [];
 
     const newLab: Omit<Laboratory, "score"> = {
       id: Date.now(),
@@ -103,17 +120,19 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
       city: city.trim(),
       country,
       region,
-      lat: coords.lat + (Math.random() - 0.5) * 2, // jitter to avoid overlap
+      lat: coords.lat + (Math.random() - 0.5) * 2,
       lng: coords.lng + (Math.random() - 0.5) * 2,
       type,
       volume,
+      tubesPerDay: tubesPerDay.trim() || undefined,
       automation,
       ivd,
+      ivdPartnerInvolved: resolvedPartner,
       stage,
       product,
       rfp,
       rfpDate: rfpDate || undefined,
-      notes: [],
+      notes: initialNotes,
       distributor: distributor.trim(),
     };
 
@@ -364,7 +383,7 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
 
             {/* Volume */}
             <div>
-              <label style={labelStyle}>Estimated Volume (tests/day)</label>
+              <label style={labelStyle}>Estimated Volume (tubes/day)</label>
               <select
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
@@ -376,6 +395,18 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Tubes per Day */}
+            <div>
+              <label style={labelStyle}>Tubes / Day (exact)</label>
+              <input
+                type="text"
+                value={tubesPerDay}
+                onChange={(e) => setTubesPerDay(e.target.value)}
+                placeholder="e.g. 2,500"
+                style={inputStyle}
+              />
             </div>
 
             {/* Automation */}
@@ -470,6 +501,33 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
               </div>
             </div>
 
+            {/* IVD Partner Involved */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>IVD Partner Involved</label>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                <select
+                  value={ivdPartner}
+                  onChange={(e) => setIvdPartner(e.target.value)}
+                  style={{ ...selectStyle, flex: 1 }}
+                >
+                  {IVD_PARTNERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+                {ivdPartner === "Other" && (
+                  <input
+                    type="text"
+                    value={ivdPartnerOther}
+                    onChange={(e) => setIvdPartnerOther(e.target.value)}
+                    placeholder="Specify partner..."
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                )}
+              </div>
+            </div>
+
             {/* Product Interest — multi-select chips */}
             <div style={{ gridColumn: "1 / -1" }}>
               <label style={labelStyle}>Product Interest</label>
@@ -501,6 +559,23 @@ export default function NewProspectModal({ onClose }: NewProspectModalProps) {
                   );
                 })}
               </div>
+            </div>
+
+            {/* Notes */}
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>Initial Notes</label>
+              <textarea
+                value={notesText}
+                onChange={(e) => setNotesText(e.target.value)}
+                placeholder="Add initial notes about this prospect..."
+                rows={3}
+                style={{
+                  ...inputStyle,
+                  resize: "vertical",
+                  minHeight: 60,
+                  lineHeight: 1.5,
+                }}
+              />
             </div>
           </div>
 
