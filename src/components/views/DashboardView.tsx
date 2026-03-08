@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { STAGES, REGIONS, AI_BRIEFING_STATIC } from "@/lib/constants";
+import { STAGES, REGIONS } from "@/lib/constants";
 import { generateCoverageBriefing } from "@/lib/coverage";
+import { generateIntelligenceBriefing } from "@/lib/briefing";
 import type { Laboratory } from "@/lib/types";
 
 interface DashboardViewProps {
@@ -180,8 +181,9 @@ export default function DashboardView({ labs, onLabClick }: DashboardViewProps) 
     .filter((l) => l.rfpDate)
     .sort((a, b) => (a.rfpDate! > b.rfpDate! ? 1 : -1));
 
+  const intelligenceBriefing = generateIntelligenceBriefing(labs);
   const coverageBriefing = generateCoverageBriefing(labs);
-  const fullBriefing = AI_BRIEFING_STATIC + "\n\n" + coverageBriefing;
+  const fullBriefing = intelligenceBriefing + "\n\n" + coverageBriefing;
 
   return (
     <div style={{ paddingBottom: 24 }}>

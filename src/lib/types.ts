@@ -39,6 +39,8 @@ export interface Laboratory {
 export interface Filters {
   regions: string[];
   stages: string[];
+  countries: string[];
+  distributors: string[];
   createdTime: "all" | "last_week" | "last_month";
 }
 

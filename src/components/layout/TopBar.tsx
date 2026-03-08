@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { REGIONS, STAGES } from "@/lib/constants";
-import type { Filters } from "@/lib/types";
+import type { Filters, AppUser, Laboratory } from "@/lib/types";
 
 interface TopBarProps {
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
   labCount: number;
   onNewProspect: () => void;
+  user: AppUser;
+  visibleLabs: Laboratory[];
 }
 
 function MultiSelectDropdown({
@@ -35,13 +37,13 @@ function MultiSelectDropdown({
 
   const allSelected = selected.length === items.length;
   const noneSelected = selected.length === 0;
-  const summary = allSelected
-    ? `All ${label}`
-    : noneSelected
-      ? `No ${label}`
-      : selected.length === 1
-        ? items.find((i) => i.key === selected[0])?.label || selected[0]
-        : `${selected.length} ${label}`;
+  const summary = allSelected || noneSelected
+    ? allSelected
+      ? `All ${label}`
+      : `No ${label}`
+    : selected.length === 1
+      ? items.find((i) => i.key === selected[0])?.label || selected[0]
+      : `${selected.length} ${label}`;
 
   const toggleItem = (key: string) => {
     onChange(
@@ -91,10 +93,11 @@ function MultiSelectDropdown({
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
             zIndex: 200,
             minWidth: 200,
+            maxHeight: 320,
+            overflowY: "auto",
             padding: "6px 0",
           }}
         >
-          {/* Select All */}
           <label
             style={{
               display: "flex",
@@ -161,7 +164,21 @@ function MultiSelectDropdown({
   );
 }
 
-export default function TopBar({ filters, onFiltersChange, labCount, onNewProspect }: TopBarProps) {
+export default function TopBar({ filters, onFiltersChange, labCount, onNewProspect, user, visibleLabs }: TopBarProps) {
+  const isGlobal = user.role === "global_manager";
+  const isRegional = user.role === "regional_manager";
+  const isDistributor = user.role === "distributor";
+
+  const availableCountries = useMemo(() => {
+    const set = new Set(visibleLabs.map((l) => l.country));
+    return Array.from(set).sort();
+  }, [visibleLabs]);
+
+  const availableDistributors = useMemo(() => {
+    const set = new Set(visibleLabs.map((l) => l.distributor).filter(Boolean));
+    return Array.from(set).sort();
+  }, [visibleLabs]);
+
   const regionItems = Object.entries(REGIONS).map(([k, v]) => ({
     key: k,
     label: v.label,
@@ -174,6 +191,9 @@ export default function TopBar({ filters, onFiltersChange, labCount, onNewProspe
     color: s.color,
   }));
 
+  const countryItems = availableCountries.map((c) => ({ key: c, label: c }));
+  const distributorItems = availableDistributors.map((d) => ({ key: d, label: d }));
+
   return (
     <div
       className="flex justify-between items-center"
@@ -183,13 +203,33 @@ export default function TopBar({ filters, onFiltersChange, labCount, onNewProspe
         borderBottom: "1px solid #E2E8F0",
       }}
     >
-      <div className="flex gap-3 items-center">
-        <MultiSelectDropdown
-          label="Regions"
-          items={regionItems}
-          selected={filters.regions}
-          onChange={(regions) => onFiltersChange({ ...filters, regions })}
-        />
+      <div className="flex gap-3 items-center" style={{ flexWrap: "wrap" }}>
+        {isGlobal && (
+          <MultiSelectDropdown
+            label="Regions"
+            items={regionItems}
+            selected={filters.regions}
+            onChange={(regions) => onFiltersChange({ ...filters, regions })}
+          />
+        )}
+
+        {(isGlobal || isRegional) && countryItems.length > 0 && (
+          <MultiSelectDropdown
+            label="Countries"
+            items={countryItems}
+            selected={filters.countries}
+            onChange={(countries) => onFiltersChange({ ...filters, countries })}
+          />
+        )}
+
+        {(isGlobal || isRegional) && distributorItems.length > 0 && (
+          <MultiSelectDropdown
+            label="Distributors"
+            items={distributorItems}
+            selected={filters.distributors}
+            onChange={(distributors) => onFiltersChange({ ...filters, distributors })}
+          />
+        )}
 
         <MultiSelectDropdown
           label="Stages"
