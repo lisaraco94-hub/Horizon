@@ -6,6 +6,9 @@ export interface Note {
   date: string;
   author: string;
   text: string;
+  event?: "Stage Change" | "Note";
+  fromStage?: Stage;
+  toStage?: Stage;
 }
 
 export interface Laboratory {

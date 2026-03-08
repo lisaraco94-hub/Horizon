@@ -10,6 +10,8 @@ interface UserContextValue {
   logout: () => void;
   getVisibleLabs: () => Laboratory[];
   addLab: (lab: Laboratory) => void;
+  updateLab: (lab: Laboratory) => void;
+  deleteLab: (id: string | number) => void;
 }
 
 const UserCtx = createContext<UserContextValue | null>(null);
@@ -53,8 +55,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     setLabs((prev) => [...prev, lab]);
   }, []);
 
+  const updateLab = useCallback((updatedLab: Laboratory) => {
+    setLabs((prev) =>
+      prev.map((lab) => (lab.id === updatedLab.id ? updatedLab : lab))
+    );
+  }, []);
+
+  const deleteLab = useCallback((id: string | number) => {
+    setLabs((prev) => prev.filter((lab) => lab.id !== id));
+  }, []);
+
   return (
-    <UserCtx.Provider value={{ user, login, logout, getVisibleLabs, addLab }}>
+    <UserCtx.Provider value={{ user, login, logout, getVisibleLabs, addLab, updateLab, deleteLab }}>
       {children}
     </UserCtx.Provider>
   );
